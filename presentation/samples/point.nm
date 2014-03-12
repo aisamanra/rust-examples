@@ -1,0 +1,14 @@
+type Point = tuple[x: int, y: int]
+
+proc add(a: Point, b: Point): Point =
+  (x: a.x + b.x, y: a.y + b.y)
+
+var a : Point
+var b : ptr Point
+
+a = (x: 1, y: 2)
+b = cast[ptr Point](alloc(sizeof(Point)))
+b.x = 4
+b.y = 3
+echo(add(a, b[]))
+dealloc(b)

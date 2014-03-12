@@ -1,0 +1,11 @@
+data Point = { x, y : Int }
+
+addPoint : Point -> Point -> Point
+addPoint p1 p2 = { x = p1.x + p2.x, y = p1.y + p2.y }
+
+main : ()
+main = { let a = { x = 1, y = 2 }
+       ; let b = malloc { x = 4, y = 3}
+       ; print (addPoint a (deref b))
+	   ; free(b)
+       }
