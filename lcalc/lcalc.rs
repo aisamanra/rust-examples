@@ -1,73 +1,80 @@
-use std::str::eq_slice;
-
-#[deriving(Eq,Clone)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Term {
     Num(int),
-    Var(~str),
-    Lam(~str, ~Term),
-    App(~Term, ~Term),
-    Let(~str, ~Term, ~Term),
+    Var(String),
+    Lam(String, Box<Term>),
+    App(Box<Term>, Box<Term>),
+    Let(String, Box<Term>, Box<Term>),
 }
 
-#[deriving(Eq,Clone)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Val {
     VNum(int),
-    VLam(~str, ~Term, ~Env),
+    VLam(String, Box<Term>, Box<Env>),
 }
 
-#[deriving(Eq,Clone)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Env {
     Empty,
-    Binding(~str, ~Val, ~Env),
+    Binding(String, Box<Val>, Box<Env>),
 }
 
-fn lookup(s: &str, e: &Env) -> ~Val {
+fn lookup(s: &String, e: &Env) -> Box<Val> {
     match *e {
         Empty => { fail!(format!("Couldn't find {} in environment", s)) }
         Binding(ref n, ref v, ref p) => {
-            if eq_slice(*n, s) {
+            if n == s {
                 v.clone()
             } else {
-                lookup(s, *p)
+                lookup(s, &**p)
             }
         }
     }
 }
 
-fn eval(t: &Term, e: &Env) -> ~Val {
+fn lcalc_eval(t: &Term, e: &Env) -> Box<Val> {
     match t {
-        &Num(num) => { ~VNum(num) }
-        &Var(ref str) => { lookup(*str, e) }
-        &Lam(ref s, ref b) => { ~VLam(s.clone(), b.clone(), ~e.clone()) }
-        &App(ref f, ref x) => {
-            match (*eval(*f, e)) {
-                VLam(ref arg, ref body, ref env) => {
+        &Num(num) => { box VNum(num) }
+        &Var(ref str) => { lookup(str, e) }
+        &Lam(ref s, ref b) => { box VLam(s.clone(), b.clone(), box e.clone()) }
+        &App(box ref f, box ref x) => {
+            match *lcalc_eval(f, e) {
+                VLam(ref arg, box ref body, box ref env) => {
                      let newEnv = Binding(arg.clone(),
-                                          eval(*x, e),
-                                          env.clone());
-                     eval(*body, &newEnv)
+                                          lcalc_eval(x, e),
+                                          box env.clone());
+                     lcalc_eval(body, &newEnv)
                   }
                 _ => fail!()
             }
         }
-        &Let(ref s, ref t, ref b) => {
+        &Let(ref s, box ref t, box ref b) => {
              let newEnv = Binding(s.clone(),
-                                  eval(*t, e),
-                                  ~e.clone());
-             eval(*b, &newEnv)
+                                  lcalc_eval(t, e),
+                                  box e.clone());
+             lcalc_eval(b, &newEnv)
         }
     }
 }
 
 fn main() {
     // (λx.λy.x)(5)(6)
-    let s1 = ~App(~App(~Lam(~"x",~Lam(~"y", ~Var(~"x"))),~Num(5)),~Num(8));
+    let s1 = box App(box App(box Lam("x".to_string(),
+                                     box Lam("y".to_string(),
+                                             box Var("x".to_string()))),
+                             box Num(5)),
+                     box Num(8));
     // let f = (λx.λy.x)(2) in f 4
-    let s2 = ~Let( ~"f",
-                     ~App(~Lam(~"x",~Lam(~"y", ~Var(~"x"))),~Num(2)),
-                     ~App(~Var(~"f"),~Num(4))
-                     );
+    let s2 = box
+      Let("f".to_string(),
+          box App(box Lam("x".to_string(),
+                          box Lam("y".to_string(),
+                                  box Var("x".to_string()))),
+                  box Num(2)),
+          box App(box Var("f".to_string()),
+                  box Num(4))
+         );
     let e = Empty;
-    println!("s1: {:?}", eval(s1, &e));
-    println!("s2: {:?}", eval(s2, &e));
+    println!("s1: {:}", lcalc_eval(&*s1, &e));
+    println!("s2: {:}", lcalc_eval(&*s2, &e));
 }
