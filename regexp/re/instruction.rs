@@ -1,5 +1,5 @@
 /* A single instruction as used in the VM-based matcher */
-#[deriving(Clone)]
+#[deriving(Clone,Show)]
 pub enum Instr {
     IChar(char),        /* match a character or fail */
     IMatch,             /* match anything successfully */

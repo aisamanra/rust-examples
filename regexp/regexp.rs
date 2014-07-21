@@ -14,18 +14,18 @@ fn main() {
     /* our sample regexp corresponds to /ab*c/ in
      * the usual notation. */
     let re = compile("..a*bc");
-    println("Recursive:");
+    println!("Recursive:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::recursive::eval(re, "abbbc"));
+             ::re::recursive::eval(re.as_slice(), "abbbc"));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::recursive::eval(re, "ac"));
+             ::re::recursive::eval(re.as_slice(), "ac"));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::recursive::eval(re, "abd"));
-    println("Manual Stack:");
+             ::re::recursive::eval(re.as_slice(), "abd"));
+    println!("Manual Stack:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::stack::eval(re, "abbbc"));
+             ::re::stack::eval(re.as_slice(), "abbbc"));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::stack::eval(re, "ac"));
+             ::re::stack::eval(re.as_slice(), "ac"));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::stack::eval(re, "abd"));
+             ::re::stack::eval(re.as_slice(), "abd"));
 }

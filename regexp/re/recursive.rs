@@ -1,5 +1,4 @@
 use re::instruction::{Instr,IChar,IMatch,IJmp,ISplit};
-mod instruction;
 
 /* We wrap the real evaluation function, as we're always going to
  * start executing instruction 0 with no string matched. */
