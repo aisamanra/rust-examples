@@ -1,3 +1,5 @@
+#![feature(macro_rules)]
+
 #[deriving(Eq,PartialEq,Clone,Show)]
 enum Term {
     Num(int),
@@ -5,6 +7,26 @@ enum Term {
     Lam(String, Box<Term>),
     App(Box<Term>, Box<Term>),
     Let(String, Box<Term>, Box<Term>),
+}
+
+fn num(n: int) -> Box<Term> {
+    box Num(n)
+}
+
+fn var(s: &str) -> Box<Term> {
+    box Var(s.to_string())
+}
+
+fn lam(x: &str, n: Box<Term>) -> Box<Term> {
+    box Lam(x.to_string(), n)
+}
+
+fn app(x: Box<Term>, y: Box<Term>) -> Box<Term> {
+    box App(x, y)
+}
+
+fn let_(x: &str, y: Box<Term>, z: Box<Term>) -> Box<Term> {
+    box Let(x.to_string(), y, z)
 }
 
 #[deriving(Eq,PartialEq,Clone,Show)]
@@ -59,21 +81,15 @@ fn lcalc_eval(t: &Term, e: &Env) -> Box<Val> {
 
 fn main() {
     // (λx.λy.x)(5)(6)
-    let s1 = box App(box App(box Lam("x".to_string(),
-                                     box Lam("y".to_string(),
-                                             box Var("x".to_string()))),
-                             box Num(5)),
-                     box Num(8));
+    let s1 = app(app(lam("x", lam("y", var("x"))),
+                     num(5)),
+                 num(6));
     // let f = (λx.λy.x)(2) in f 4
-    let s2 = box
-      Let("f".to_string(),
-          box App(box Lam("x".to_string(),
-                          box Lam("y".to_string(),
-                                  box Var("x".to_string()))),
-                  box Num(2)),
-          box App(box Var("f".to_string()),
-                  box Num(4))
-         );
+    let s2 = let_("f",
+                  app(lam("x", lam("y", var("x"))),
+                      num(2)),
+                  app(var("f"),
+                      num(4)));
     let e = Empty;
     println!("s1: {:}", lcalc_eval(&*s1, &e));
     println!("s2: {:}", lcalc_eval(&*s2, &e));
