@@ -15,21 +15,19 @@ Right now, the examples include:
 Build System
 ------------
 
-These programs are built using [`redo`](https://github.com/apenwarr/redo),
+The presentation is built using [`redo`](https://github.com/apenwarr/redo),
 which is my preferred build system for small projects. I understand that not
 everyone has `redo`, so I've included `do`, which is a small shell
 implementation of `redo` that rebuilds everything rather than doing clever
-dependency-tracking like `redo` proper. You can build any of these projects with
+dependency-tracking like `redo` proper. You can build the presentation with
 
-    $ cd project-dir
+    $ cd presentation
     $ ../do
 
-and clean any of them with
+and clean it with
 
-    $ cd project-dir
+    $ cd presentation
     $ ../do clean
 
-The only project that really _needs_ a build script is the presentation,
-which gets built with [`pandoc`](http://johnmacfarlane.net/pandoc/) and
-then compiled with `xelatex`, but each one has a build script in case
-you want to poke at the commands used to build the projects.
+The Rust projects have been updated to use [Cargo](http://crates.io/), the
+proper Rust build system.
