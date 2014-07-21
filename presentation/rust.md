@@ -2,6 +2,11 @@
 % G.D. Ritter
 % March 2014
 
+# WARNING
+
+The following presentation is out of date, and may not ever be up-to-date
+again. Proceed with caution!
+
 # The Rust Programming Language
 
 ![](imgs/rust-logo.png)
