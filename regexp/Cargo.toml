@@ -1,0 +1,5 @@
+[package]
+
+name    = "regexp"
+version = "0.0.2"
+authors = [ "gdritter@galois.com" ]
