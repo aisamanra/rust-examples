@@ -1,0 +1,5 @@
+[package]
+
+name    = "lcalc"
+version = "0.0.2"
+authors = [ "gdritter@galois.com" ]
