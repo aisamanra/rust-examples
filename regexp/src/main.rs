@@ -12,20 +12,26 @@ mod re;
 
 fn main() {
     /* our sample regexp corresponds to /ab*c/ in
-     * the usual notation. */
-    let re = compile("..a*bc");
+     * the usual notation.
+     * These two lines can be collapsed into one once
+     * this RFC lands: https://github.com/rust-lang/rfcs/pull/66
+     */
+    let regexp = compile("..a*bc");
+    let instrs = regexp.as_slice();
+
     println!("Recursive:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::recursive::eval(re.as_slice(), "abbbc"));
+             ::re::recursive::eval(instrs, "abbbc"));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::recursive::eval(re.as_slice(), "ac"));
+             ::re::recursive::eval(instrs, "ac"));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::recursive::eval(re.as_slice(), "abd"));
+             ::re::recursive::eval(instrs, "abd"));
+
     println!("Manual Stack:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::stack::eval(re.as_slice(), "abbbc"));
+             ::re::stack::eval(instrs, "abbbc"));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::stack::eval(re.as_slice(), "ac"));
+             ::re::stack::eval(instrs, "ac"));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::stack::eval(re.as_slice(), "abd"));
+             ::re::stack::eval(instrs, "abd"));
 }

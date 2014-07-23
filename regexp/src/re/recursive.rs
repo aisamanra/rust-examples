@@ -7,7 +7,10 @@ pub fn eval(instrs: &[Instr], input: &str) -> bool {
 }
 
 /* We use the Rust stack as our stack in this naive recursive
- * implementation. */
+ * implementation. We have a vector slice of instructions,
+ * a string we're matching over, the current program counter
+ * in the instructions, and the current point to which we've
+ * traversed the string. */
 fn eval1(instrs: &[Instr], input: &str, pc: uint, cc: uint) -> bool {
     match instrs[pc] {
         IChar(_) if cc >= input.len() => return false,
@@ -16,7 +19,7 @@ fn eval1(instrs: &[Instr], input: &str, pc: uint, cc: uint) -> bool {
         IChar(_)     => return false,
         IMatch       => return true,
         IJmp(i)      => eval1(instrs, input, i, cc),
-        ISplit(i, _) if eval1(instrs, input, i, cc) => true,
-        ISplit(_, j) => eval1(instrs, input, j, cc),
+        ISplit(i, j) => eval1(instrs, input, i, cc) ||
+                        eval1(instrs, input, j, cc),
     }
 }

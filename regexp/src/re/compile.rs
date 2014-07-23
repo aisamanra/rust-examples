@@ -33,31 +33,70 @@ fn parse<'a>(s: &'a str) -> (&'a str, Regexp) {
     }
 }
 
-/* Compiling an AST for regexps to the instructions */
-fn emit(r: &Regexp, i: uint) -> (uint, Vec<Instr>) {
-    match *r {
-        RChar(c) => { (i+1, vec![IChar(c)]) },
-        RSeq(box ref a, box ref b) =>
-            { let (ai, mut v1) = emit(a, i);
-              let (bi, v2) = emit(b, ai);
+/* Compiling an AST for regexps to the instructions.
+ * The return values correspond to the length of the
+ * vector (so that subsequent instructions to be added
+ * know what pc to use) and the vector of instructions.
+ */
+fn emit(regexp: &Regexp, pc: uint) -> (uint, Vec<Instr>) {
+    match *regexp {
+        /* For a match, we produce this code:
+         *   ---- <- pc
+         *   | IChar(chr)
+         *   ---- <- pc + 1
+         */
+        RChar(chr) => { (pc+1, vec![IChar(chr)]) },
+        /* For a sequencing, we produce this code:
+         *   ---- <- pc
+         *   |   [[ first ]]
+         *   ---- <- first_pc
+         *   |   [[ second ]]
+         *   ---- <- second_pc
+         */
+        RSeq(box ref first, box ref second) =>
+            { let (first_pc, mut v1) = emit(first, pc);
+              let (second_pc, v2) = emit(second, first_pc);
               v1.push_all_move(v2);
-              (bi, v1) },
-        RChc(box ref a, box ref b) =>
-            { let (ai, v1) = emit(a, i + 1);
-              let (bi, v2) = emit(b, ai + 1);
-              let mut spl = vec![ ISplit(i + 1, ai + 1) ];
-              let jmp = vec![ IJmp(ai) ];
+              (second_pc, v1)
+            },
+        /* For a choice, we produce this code:
+         *   ---- <- pc
+         *   | ISplit(pc+1, first_pc+1)
+         *   ---- <- pc + 1
+         *   |   [[ first ]]
+         *   ---- <- first_pc
+         *   | IJmp(second_pc)
+         *   ---- <- first_pc + 1
+         *   |   [[ second ]]
+         *   ---- <- second_pc
+         */
+        RChc(box ref first, box ref second) =>
+            { let (first_pc, v1) = emit(first, pc + 1);
+              let (second_pc, v2) = emit(second, first_pc + 1);
+              let mut split_instr = vec![ ISplit(pc + 1, first_pc + 1) ];
+              let jmp_instr = vec![ IJmp(second_pc) ];
+              split_instr.push_all_move(v1);
+              split_instr.push_all_move(jmp_instr);
+              split_instr.push_all_move(v2);
+              (second_pc, split_instr)
+            },
+        /* For a repetition, we produce this code:
+         *   ---- <- pc
+         *   | ISplit(pc+1, expr_pc + 1)
+         *   ---- <- pc + 1
+         *   |   [[ expr ]]
+         *   ---- <- expr_pc
+         *   | IJmp(pc)
+         *   ---- <- expr_pc + 1
+         */
+        RRep(box ref expr) =>
+            { let (expr_pc, v1) = emit(expr, pc + 1);
+              let mut spl = vec![ ISplit(pc + 1, expr_pc + 1) ];
+              let jmp = vec![ IJmp(pc) ];
               spl.push_all_move(v1);
               spl.push_all_move(jmp);
-              spl.push_all_move(v2);
-              (bi, spl) },
-        RRep(box ref a) =>
-            { let (ai, v1) = emit(a, i + 1);
-              let mut spl = vec![ ISplit(i + 1, ai + 1) ];
-              let jmp = vec![ IJmp(i) ];
-              spl.push_all_move(v1);
-              spl.push_all_move(jmp);
-              (ai + 1, spl) },
+              (expr_pc + 1, spl)
+            },
     }
 }
 
@@ -67,5 +106,8 @@ pub fn compile(s: &str) -> Vec<Instr> {
     println!("{}", re);
     let (_, ins) = emit(&re, 0);
     println!("{}", ins);
+    /* If we get to the end of a compiled regular expression,
+     * that means it hasn't aborted and we can match.
+     */
     return ins.append([IMatch]);
 }

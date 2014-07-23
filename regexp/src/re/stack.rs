@@ -9,7 +9,14 @@ struct EvalState { pc: uint, cc: uint }
 pub fn eval(instrs: &[Instr], input: &str) -> bool {
     let mut stack = vec![ EvalState {pc: 0, cc: 0} ];
 
+    /* Every time we find that a possibility is impossible, we
+     * remove it from the stack. If we have completed a match,
+     * we'll short-circuit out of this loop; otherwise, an empty
+     * stack means we have failed every possible branch and can
+     * return false. */
     while stack.len() > 0 {
+        /* This call to .unwrap() is safe because we've already
+         * manually checked the stack length. */
         let st = stack.pop().unwrap();
         match instrs[st.pc] {
             IChar(_) if st.cc >= input.len() =>
