@@ -1,4 +1,4 @@
-use re::instruction::{Instr,IChar,IMatch,IJmp,ISplit};
+use re::instruction::Instr;
 
 /* We wrap the real evaluation function, as we're always going to
  * start executing instruction 0 with no string matched. */
@@ -13,13 +13,13 @@ pub fn eval(instrs: &[Instr], input: &str) -> bool {
  * traversed the string. */
 fn eval1(instrs: &[Instr], input: &str, pc: uint, cc: uint) -> bool {
     match instrs[pc] {
-        IChar(_) if cc >= input.len() => return false,
-        IChar(c) if c == input.char_at(cc) =>
+        Instr::Char(_) if cc >= input.len() => return false,
+        Instr::Char(c) if c == input.char_at(cc) =>
             eval1(instrs, input, pc + 1, cc + 1),
-        IChar(_)     => return false,
-        IMatch       => return true,
-        IJmp(i)      => eval1(instrs, input, i, cc),
-        ISplit(i, j) => eval1(instrs, input, i, cc) ||
+        Instr::Char(_)     => return false,
+        Instr::Match       => return true,
+        Instr::Jmp(i)      => eval1(instrs, input, i, cc),
+        Instr::Split(i, j) => eval1(instrs, input, i, cc) ||
                         eval1(instrs, input, j, cc),
     }
 }
