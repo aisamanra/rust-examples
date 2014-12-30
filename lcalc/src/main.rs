@@ -1,6 +1,9 @@
-use std::task;
+// This isn't a very Rust-ey lambda-calculus implementation. It's much
+// more TAPL-ey, which I think makes it nice for pedagogical purposes
+// when aimed at functional programmers, but you wouldn't actually
+// use Rust like this in practice.
 
-#[deriving(Eq,PartialEq,Clone,Show,Send)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Term {
     Num(int),
     Var(String),
@@ -12,39 +15,39 @@ enum Term {
 // The following are wrappers over λ-terms to simplify writing
 // allocations. It really does help, as you can see in main.
 fn num(n: int) -> Box<Term> {
-    box Num(n)
+    box Term::Num(n)
 }
 
 fn var(s: &str) -> Box<Term> {
-    box Var(s.to_string())
+    box Term::Var(s.to_string())
 }
 
 fn lam(x: &str, n: Box<Term>) -> Box<Term> {
-    box Lam(x.to_string(), n)
+    box Term::Lam(x.to_string(), n)
 }
 
 fn app(x: Box<Term>, y: Box<Term>) -> Box<Term> {
-    box App(x, y)
+    box Term::App(x, y)
 }
 
 fn let_(x: &str, y: Box<Term>, z: Box<Term>) -> Box<Term> {
-    box Let(x.to_string(), y, z)
+    box Term::Let(x.to_string(), y, z)
 }
 
 // A value is either a number or a closure, which has to have
 // its environment around. We'll have to clone the environment
 // into the closure to make sure that it stays around even if
 // the closure is returned from the environment where it was used.
-#[deriving(Eq,PartialEq,Clone,Show,Send)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Val {
-    VNum(int),
-    VLam(String, Box<Term>, Box<Env>),
+    Num(int),
+    Lam(String, Box<Term>, Box<Env>),
 }
 
 // I could also use a pair of a map and a parent pointer, but
 // this is a little more TAPL-ish. Plus, we generally always
 // bind a single variable at a time.
-#[deriving(Eq,PartialEq,Clone,Show,Send)]
+#[deriving(Eq,PartialEq,Clone,Show)]
 enum Env {
     Empty,
     Binding(String, Box<Val>, Box<Env>),
@@ -54,8 +57,8 @@ enum Env {
 // We can always wrap this in another thread if we want to get a value.
 fn lookup(s: &String, e: &Env) -> Box<Val> {
     match *e {
-        Empty => { fail!(format!("Couldn't find {} in environment", s)) }
-        Binding(ref n, ref v, ref p) => {
+        Env::Empty => { panic!(format!("Couldn't find {} in environment", s)) }
+        Env::Binding(ref n, ref v, ref p) => {
             if n == s {
                 v.clone()
             } else {
@@ -70,31 +73,32 @@ fn lookup(s: &String, e: &Env) -> Box<Val> {
 // ownership.
 fn lcalc_eval(t: &Term, e: &Env) -> Box<Val> {
     match t {
-        &Num(num) => {
-            box VNum(num)
+        &Term::Num(num) => {
+            box Val::Num(num)
         }
-        &Var(ref str) => {
+        &Term::Var(ref str) => {
             lookup(str, e)
         }
-        &Lam(ref s, ref b) => {
-            box VLam(s.clone(), b.clone(), box e.clone())
+        &Term::Lam(ref s, ref b) => {
+            box Val::Lam(s.clone(), b.clone(), box e.clone())
         }
-        &App(box ref f, box ref x) => {
+        &Term::App(box ref f, box ref x) => {
             match *lcalc_eval(f, e) {
-                VLam(ref arg, box ref body, box ref env) => {
-                     let newEnv = Binding(arg.clone(),
-                                          lcalc_eval(x, e),
-                                          box env.clone());
-                     lcalc_eval(body, &newEnv)
+                Val::Lam(ref arg, box ref body, box ref env) => {
+                     let new_env = Env::Binding(arg.clone(),
+				               lcalc_eval(x, e),
+                                               box env.clone());
+                     lcalc_eval(body, &new_env)
                   }
-                _ => fail!("Tried to apply a non-function!")
+                _ => panic!("Tried to apply a non-function!")
             }
         }
-        &Let(ref s, box ref t, box ref b) => {
-             let newEnv = Binding(s.clone(),
-                                  lcalc_eval(t, e),
-                                  box e.clone());
-             lcalc_eval(b, &newEnv)
+        &Term::Let(ref s, box ref t, box ref b) => {
+             let new_env =
+	     	 Env::Binding(s.clone(),
+			      lcalc_eval(t, e),
+                              box e.clone());
+             lcalc_eval(b, &new_env)
         }
     }
 }
@@ -102,14 +106,13 @@ fn lcalc_eval(t: &Term, e: &Env) -> Box<Val> {
 // This copies the arguments and evaluates it in another thread, returning
 // None if the evaluation fails.
 fn lcalc_eval_opt(t: &Term, e: &Env) -> Option<Box<Val>> {
-    let (tx, rx) = channel();
     let new_term = t.clone();
     let new_env = e.clone();
-    let result = task::try(proc() {
-        tx.send(lcalc_eval(&new_term, &new_env));
+    let guard = std::thread::Thread::spawn(move || {
+        lcalc_eval(&new_term, &new_env)
     });
-    match result {
-        Ok(_) => Some(rx.recv()),
+    match guard.join() {
+        Ok(x) => Some(x),
         Err(_) => None,
     }
 }
@@ -129,7 +132,7 @@ fn main() {
     let s3 = app(lam("x", var("y")), num(5));
     // (2)(3), which will also obviously fail
     let s4 = app(num(2), num(3));
-    let e = Empty;
+    let e = Env::Empty;
     println!("s1: {:}", lcalc_eval_opt(&*s1, &e));
     println!("s2: {:}", lcalc_eval_opt(&*s2, &e));
     println!("s3: {:}", lcalc_eval_opt(&*s3, &e));
