@@ -1,8 +1,8 @@
 /* A single instruction as used in the VM-based matcher */
-#[deriving(Clone,Show)]
+#[derive(Clone,Debug)]
 pub enum Instr {
     Char(char),        /* match a character or fail */
     Match,             /* match anything successfully */
-    Jmp(uint) ,        /* jump to instr i */
-    Split(uint, uint), /* try both instrs i and j */
+    Jmp(usize),          /* jump to instr i */
+    Split(usize, usize),   /* try both instrs i and j */
 }

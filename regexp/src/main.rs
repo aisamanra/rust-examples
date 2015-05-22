@@ -10,28 +10,31 @@
 use re::compile;
 mod re;
 
+fn as_chars(s: &str) -> Vec<char> {
+    s.chars().collect()
+}
+
 fn main() {
     /* our sample regexp corresponds to /ab*c/ in
      * the usual notation.
      * These two lines can be collapsed into one once
      * this RFC lands: https://github.com/rust-lang/rfcs/pull/66
      */
-    let regexp = compile("..a*bc");
-    let instrs = regexp.as_slice();
+    let instrs = &compile("..a*bc");
 
     println!("Recursive:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::recursive::eval(instrs, "abbbc"));
+             ::re::recursive::eval(instrs, &as_chars("abbbc")));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::recursive::eval(instrs, "ac"));
+             ::re::recursive::eval(instrs, &as_chars("ac")));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::recursive::eval(instrs, "abd"));
+             ::re::recursive::eval(instrs, &as_chars("abd")));
 
     println!("Manual Stack:");
     println!("  match(re, \"abbbc\")\t== {}",
-             ::re::stack::eval(instrs, "abbbc"));
+             ::re::stack::eval(instrs, &as_chars("abbbc")));
     println!("  match(re, \"ac\")\t== {}",
-             ::re::stack::eval(instrs, "ac"));
+             ::re::stack::eval(instrs, &as_chars("ac")));
     println!("  match(re, \"abd\")\t== {}",
-             ::re::stack::eval(instrs, "abd"));
+             ::re::stack::eval(instrs, &as_chars("abd")));
 }

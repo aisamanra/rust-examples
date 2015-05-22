@@ -2,7 +2,7 @@ use re::instruction::Instr;
 
 /* We wrap the real evaluation function, as we're always going to
  * start executing instruction 0 with no string matched. */
-pub fn eval(instrs: &[Instr], input: &str) -> bool {
+pub fn eval(instrs: &[Instr], input: &[char]) -> bool {
     eval1(instrs, input, 0, 0)
 }
 
@@ -11,10 +11,10 @@ pub fn eval(instrs: &[Instr], input: &str) -> bool {
  * a string we're matching over, the current program counter
  * in the instructions, and the current point to which we've
  * traversed the string. */
-fn eval1(instrs: &[Instr], input: &str, pc: uint, cc: uint) -> bool {
+fn eval1(instrs: &[Instr], input: &[char], pc: usize, cc: usize) -> bool {
     match instrs[pc] {
         Instr::Char(_) if cc >= input.len() => return false,
-        Instr::Char(c) if c == input.char_at(cc) =>
+        Instr::Char(c) if c == input[cc] =>
             eval1(instrs, input, pc + 1, cc + 1),
         Instr::Char(_)     => return false,
         Instr::Match       => return true,

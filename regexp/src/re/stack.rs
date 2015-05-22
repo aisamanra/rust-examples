@@ -2,11 +2,11 @@ use re::instruction::Instr;
 
 /* The state of a program can be unambiguously specified by
  * a current instruction and a current position in the string. */
-struct EvalState { pc: uint, cc: uint }
+struct EvalState { pc: usize, cc: usize }
 
 /* An evaluator that maintains a manual, mutable stack for doing
  * regular-expression matching. */
-pub fn eval(instrs: &[Instr], input: &str) -> bool {
+pub fn eval(instrs: &[Instr], input: &[char]) -> bool {
     let mut stack = vec![ EvalState {pc: 0, cc: 0} ];
 
     /* Every time we find that a possibility is impossible, we
@@ -21,7 +21,7 @@ pub fn eval(instrs: &[Instr], input: &str) -> bool {
         match instrs[st.pc] {
             Instr::Char(_) if st.cc >= input.len() =>
                 continue,
-            Instr::Char(c) if c == input.char_at(st.cc) =>
+            Instr::Char(c) if c == input[st.cc] =>
                 stack.push(EvalState { pc: st.pc + 1, cc: st.cc + 1 }),
             Instr::Char(_)     =>
                 continue,
