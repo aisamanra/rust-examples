@@ -1,11 +1,6 @@
 % The Rust Programming Language
 % G.D. Ritter
-% March 2014
-
-# WARNING
-
-The following presentation is out of date, and may not ever be up-to-date
-again. Proceed with caution!
+% May 2015
 
 # The Rust Programming Language
 
@@ -50,7 +45,7 @@ by emphasizing _zero-cost abstractions_.
 data Point = { x, y : Int }
 
 addPoint : Point -> Point -> Point
-addPoint p1 p2 = { x = p1.x + p2.x, y = p1.y + p2.y }
+addPoint l r = { x = l.x + r.x, y = l.y + r.y }
 
 main : ()
 main = { let a = { x = 1, y = 2 }
@@ -98,8 +93,8 @@ int main(int argc, char* argv[]) {
   point a(1, 2);
   point* b = new point(4, 3);
   point c = a.add(*b);
-  std::cout << "{ .x = " << c.x;
-  std::cout << ", .y = " << c.y << " }" << std::endl;
+  cout << "{ .x = " << c.x;
+  cout << ", .y = " << c.y << " }" << endl;
   delete b;
 }
 ~~~~
@@ -147,7 +142,7 @@ void main() {
 
 # Systems Programming Languages
 
-## Nimrod
+## Nim
 
 ~~~~
 type Point = tuple[x: int, y: int]
@@ -171,7 +166,7 @@ dealloc(b)
 ## Rust
 
 ~~~~{.rust}
-struct Point { x: int, y: int }
+struct Point { x: isize, y: isize }
 
 impl Point {
     fn add(self, other: Point) -> Point {
@@ -182,139 +177,365 @@ impl Point {
 
 fn main() {
     let a = Point { x: 1, y: 2 };
-    let b = ~Point { x: 4, y: 3 };
+    let b = Box::new(Point { x: 4, y: 3 });
     println!("{:?}", a.add(*b));
 }
 ~~~~
 
-# Basics of Rust
-
-# Basics of Rust
+# What Makes Rust Interesting
 
 > It's like C++ grew up, went to grad school, started dating Haskell, and
 > is sharing an office with Erlang...
 >
 > —Michael Sullivan
 
-# Basics of Rust
+# What Makes Rust Interesting
 
-## Recursive Factorial
-
-~~~~{.rust}
-fn fact1(n: int) -> int {
-  if n <= 0 {
-    1
-  } else {
-    n * fact1(n-1)
-  }
-}
-~~~~
-
-## Another Recursive Factorial
-
-~~~~{.rust}
-fn fact2(n: int) -> int {
-  match n {
-    0 => { 1 }
-    _ => { n * fact2(n-1) }
-  }
-}
-~~~~
-
-# Basics of Rust
-
-## An Imperative Factorial
-
-~~~~{.rust}
-fn fact3(mut n: int) -> int {
-  let mut res = 1;
-  while (n > 0) {
-    res *= n;
-    n   -= 1;
-  }
-  res
-}
-~~~~
-
-## One More Imperative Factorial
-
-~~~~{.rust}
-fn fact4(mut n: int) -> int {
-  for i in range(1, n) { n *= i; }
-  return n;
-}
-~~~~
-
-# Basics of Rust
-
-## Tuples
-
-~~~~{.rust}
-{
-  let t: (int, int, int) = (1,2,3);
-  let (a,b,c)            = t;
-  let r = match t { (a,b,c) => a + b + c };
-}
-~~~~
-
-## Tuple Structs (i.e. named tuples)
-
-~~~~{.rust}
-struct T(bool, int);
-fn f(t: T) -> int {
-  let T(myBool, myInt) = t;
-  return if myBool { myInt } else { -myInt };
-}
-~~~~
-
-# Basics of Rust
-
-## Structs
-
-~~~~{.rust}
-struct Point { x: f64, y: f64 }
-
-fn isOrigin1 (p: Point) -> bool {
-  p.x == 0.0 && p.y == 0.0
-}
-~~~~
-
-~~~~{.rust}
-fn isOrigin2 (p: Point) -> bool {
-  match p {
-    Point { x: 0.0, y: 0.0 } => true,
-    _                        => false
-  }
-}
-~~~~
-
-# Basics of Rust
-
-## Enums
-
-~~~~{.rust}
-enum Color { Red, Green, Blue }
-
-enum Shape {
-  Circle(Point, f64),
-  Rectangle(Point, Point),
-}
-
-fn area(s: Shape) -> f64 {
-  match s {
-    Circle(_, sz)     => f64::consts::pi * sz * sz,
-    Rectangle(p1, p2) => (p2.x - p1.x) * (p2.y - p1.y)
-  }
-}
-~~~~
-
-# Pointers and Memory
-
-# Pointers and Memory
+## Ownership
 
 \begin{center}
 \includegraphics[width=.9\textwidth]{imgs/dawkins-owned.png}
 \end{center}
+
+## Ownership
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  println!("x = {:?}", x);
+}
+~~~~
+
+# Brief Aside
+## Traits
+
+~~~~{.rust}
+trait ToString {
+  fn to_string(&self) -> String;
+}
+
+impl ToString for () {
+  fn to_string(&self) -> String {
+    "unit".to_owned()
+  }
+}
+~~~~
+
+# Brief Aside
+## Traits
+
+~~~~{.rust}
+fn print_excitedly<T: ToString>(t: T) {
+  println!("{}!!!", t.to_string());
+}
+
+fn main() {
+  print_excitedly( () );
+}
+~~~~
+
+# Brief Aside from the Brief Aside
+## Polymorphism
+
+~~~~{.rust}
+fn make_pair<A, B>(a: A, b: B) -> (A, B) {
+  (a, b)
+}
+
+fn not_eq<A: Eq>(left: A, right: A) -> bool {
+  left != right
+}
+~~~~
+
+# Brief Aside from the Brief Aside
+## Polymorphism
+
+~~~~{.rust}
+fn print_eq<A: Eq + ToString>(left: A, right: A) {
+  if left == right {
+    println!("{} and {} are equal",
+             left.to_string(),
+             right.to_string());
+  } else {
+    println!("{} and {} are different",
+             left.to_string(),
+             right.to_string());
+  }
+}
+~~~~
+
+# Brief Aside
+## Traits
+
+~~~~{.rust}
+/* this is /slightly/ different in the stdlib */
+trait PartialEq<Rhs> {
+  fn eq(&self, other: &Rhs) -> bool;
+  fn ne(&self, other: &Rhs) -> bool;
+}
+
+/* no more methods, but more laws */
+trait Eq: PartialEq<Self> { }
+~~~~
+
+# Brief Aside
+## Traits
+
+~~~~{.rust}
+struct MyNum { num: i32 }
+
+impl PartialEq<MyNum> for MyNum {
+  fn eq(&self, other: &MyNum) -> bool {
+    self.num == other.num
+  }
+}
+
+impl Eq for MyNum { }
+~~~~
+
+# Brief Aside
+## Traits
+
+~~~~{.rust}
+/* or just this */
+#[derive(PartialEq,Eq)]
+struct MyNum { num: i32 }
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x;
+  println!("x = {:?}", x);
+
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x; /* <- value moves here */
+  println!("x = {:?}", x);
+
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x;
+  println!("x = {:?}", x);
+  /* so this does not compile */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership --- Explicit Cloning
+
+~~~~{.rust}
+#[derive(Debug, Clone)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x.clone();
+  println!("x = {:?}", x);
+  /* but this does! */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership --- Implicit Copying
+
+~~~~{.rust}
+#[derive(Debug, Clone, Copy)]
+struct MyNum { num: i32 }
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x;
+  println!("x = {:?}", x);
+  /* as does this! */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership --- Destructors
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+impl Drop for MyNum {
+  fn drop(&mut self) {
+    println!("dropping: {:?}", self)
+  }
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  println!("x = {:?}", x);
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## Ownership --- Special Clones
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+impl Clone for MyNum {
+  fn clone(&self) -> Self {
+    println!("Cloning a MyNum...");
+    MyNum { num: self.num }
+  }
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = x.clone();
+  println!("x = {:?}", y);
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## References
+
+\begin{center}
+\includegraphics[width=.9\textwidth]{imgs/dril-owned.png}
+\end{center}
+
+# What Makes Rust Interesting
+
+## References
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn some_func(_: MyNum) {
+  println!("yeah, whatevs");
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  some_func(x);
+  println("{:?}", x);
+
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## References
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn some_func(_: MyNum) {
+  println!("yeah, whatevs");
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  some_func(x);
+  println("{:?}", x);
+  /* ERROR: use of moved value */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## References
+
+~~~~{.rust}
+#[derive(Debug)]
+struct MyNum { num: i32 }
+
+fn some_func(_: MyNum) -> MyNum {
+  println!("yeah, whatevs");
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  let y = some_func(x.clone());
+  println("{:?}", y);
+  /* works---but so tedious! */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## References
+
+~~~~{.rust}
+#[derive(Debug,Clone)]
+struct MyNum { num: i32 }
+
+fn some_func(_: MyNum) {
+  println!("yeah, whatevs");
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  some_func(x.clone());
+  println("{:?}", x);
+  /* works---but not what we want */
+}
+~~~~
+
+# What Makes Rust Interesting
+
+## References
+
+~~~~{.rust}
+#[derive(Debug,Clone)]
+struct MyNum { num: i32 }
+
+fn some_func(_: &MyNum)  {
+  println!("yeah, whatevs");
+}
+
+fn main() {
+  let x = MyNum { num: 2 };
+  some_func(&x);
+  println("{:?}", x);
+  /* works! */
+}
+~~~~
+
+# Pointers and Memory
 
 # Pointers and Memory
 
@@ -322,10 +543,10 @@ fn area(s: Shape) -> f64 {
 
 ~~~~{.rust}
 fn main() {
-  let x: ~[int] = ~[1,2,3];
+  let x: Box<[i32]> = Box::new([1,2,3]);
   /* x in scope */
   {
-    let y: ~[int] = ~[4,5,6];
+    let y: Box<[i32]> = Box::new([4,5,6]);
     /* x, y in scope */
   }
   /* x in scope */
@@ -338,14 +559,16 @@ fn main() {
 
 ~~~~{.rust}
 fn main() {
-  let x: ~[int] = ~[1,2,3];   // malloc |----+
-  /* ... */                   //             |
-  {                           //             |
-    let y: ~[int] = ~[4,5,6]; // malloc |-+  |
-    /* ... */                 //          |  |
-  }                           // free <---+  |
-  /* ... */                   //             |
-}                             // free <------+
+  let x: Box<[i32]> =    // malloc |----+
+    Box::new([1,2,3]);   //             |
+  /* ... */              //             |
+  {                      //             |
+    let y: Box<[i32]> =  // malloc |-+  |
+      Box::new([4,5,6]); //          |  |
+    /* ... */            //          |  |
+  }                      // free <---+  |
+  /* ... */              //             |
+}                        // free <------+
 ~~~~
 
 # Pointers and Memory
@@ -353,16 +576,16 @@ fn main() {
 ## "Owned" Pointers
 
 ~~~~{.rust}
-fn f0() -> ~[int] {
-  return ~[1,2,3]; // returning ownership
+fn f0() -> Box<[i32]> {
+  return Box::new([1,2,3]); // returning ownership
 }
-fn f1() -> ~[int] {
-  let a = ~[1,2,3];
+fn f1() -> Box<[int]> {
+  let a = Box::new([1,2,3]);
   let b = a;
   return a; // error: use of moved value: `a`
 }
-fn f2() -> ~[int] {
-  let a = ~[1,2,3];
+fn f2() -> Box::new([int]) {
+  let a = Box::new([1,2,3]);
   let b = a.clone();
   return a; // fine now; `a` and `b` both valid
 }
@@ -376,8 +599,9 @@ fn f2() -> ~[int] {
 #[deriving(Clone)]
 enum List<T> { Cons(T, ~List<T>), Nil }
 
-fn f3() -> ~List<int> {
-  let mut a = ~Cons(1, ~Cons(2, ~Nil))
+fn f3() -> Box<List<int>> {
+  let mut a = Box::new(Cons(1,
+    Box::new(Cons(2, Box::new(Nil)))));
   /* a is mutable */
   let b = a;
   /* can no longer use a, b is immutable */
@@ -394,12 +618,12 @@ fn f3() -> ~List<int> {
 ~~~~{.rust}
 type t8 = (u32,u32,u32,u32,u32,u32,u32,u32);
 
-fn eight_nums() -> ~t8 {
-  ~(1,2,3,4,5,6,7,8)
+fn eight_nums() -> Box<t8> {
+  Box::new((1,2,3,4,5,6,7,8))
 }
 
 fn main() {
-  let t: ~t8 = eight_nums();
+  let t: Box<t8> = eight_nums();
   /* ... */
 }
 ~~~~
@@ -416,7 +640,7 @@ fn eight_nums() -> t8 {
 }
 
 fn main() {
-  let t: ~t8 = ~eight_nums();
+  let t: Box<t8> = Box::new(eight_nums());
   /* ... */
 }
 ~~~~

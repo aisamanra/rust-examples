@@ -1,4 +1,7 @@
 DEPS="rust.tex rust.md"
 redo-ifchange $DEPS
-xelatex --output-directory build 1>&2 rust.tex
-mv build/rust.pdf $3
+DIR=$(mktemp -d)
+xelatex --output-directory $DIR 1>&2 rust.tex
+xelatex --output-directory $DIR 1>&2 rust.tex
+mv $DIR/rust.pdf $3
+rm -rf $DIR
