@@ -14,10 +14,7 @@ pub fn eval(instrs: &[Instr], input: &[char]) -> bool {
      * we'll short-circuit out of this loop; otherwise, an empty
      * stack means we have failed every possible branch and can
      * return false. */
-    while stack.len() > 0 {
-        /* This call to .unwrap() is safe because we've already
-         * manually checked the stack length. */
-        let st = stack.pop().unwrap();
+    while let Some(st) = stack.pop() {
         match instrs[st.pc] {
             Instr::Char(_) if st.cc >= input.len() =>
                 continue,
